@@ -17,7 +17,7 @@ int save_image_jpg(const std::filesystem::path& p, int w, int h, const img_data&
 	return stbi_write_jpg(p.string().c_str(), w, h, 3, img.data(), quality);
 }
 
-int save_image_png(const std::filesystem::path& p, int w, int h, int channels, const img_dataf& img)
+int save_image_png(const std::filesystem::path& p, int w, int h, int channels, const img_datad& img)
 {
 	img_data img_conv(img.size());
 
@@ -29,7 +29,7 @@ int save_image_png(const std::filesystem::path& p, int w, int h, int channels, c
 	 stbi_write_png(p.string().c_str(), w, h, channels, img_conv.data(), w * channels);
 }
 
-int save_image_jpg(const std::filesystem::path& p, int w, int h, const img_dataf& img, int quality)
+int save_image_jpg(const std::filesystem::path& p, int w, int h, const img_datad& img, int quality)
 {
 	img_data img_conv(img.size());
 

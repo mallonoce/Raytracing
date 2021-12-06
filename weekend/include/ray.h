@@ -1,25 +1,20 @@
 #ifndef _RAY_H_
 #define _RAY_H_
 
-#include <iostream>
-#include <filesystem>
-
-#include <Eigen/Dense>
-
-using Vec3f = Eigen::Vector3f;
+#include "header.h"
 
 class Ray 
 {
 public:
 	Ray() {};
-	Ray(const Vec3f& origin, const Vec3f& direction) : _origin(origin), _direction(direction) {};
-	Vec3f origin() const { return _origin; }
-	Vec3f direction() const { return _direction; }
-	Vec3f point_at_param(const float& t) { return _origin + t * _direction; }
+	Ray(const vec3& origin, const vec3& direction) : _origin(origin), _direction(direction.normalized()) {};
+	vec3 origin() const { return _origin; }
+	vec3 direction() const { return _direction; }
+	vec3 point_at_param(const double& t) const { return _origin + t * _direction; }
+	vec3 at(const double& t) const { return point_at_param(t); }
 private:
-	Vec3f _origin;
-	Vec3f _direction;
-
+	vec3 _origin;
+	vec3 _direction;
 };
 
 #endif // _RAY_H_
