@@ -1,5 +1,5 @@
 #include "header.h"
-#include "ray.h"
+#include "camera.h"
 #include "hittable.h"
 
 #include <filesystem>
@@ -7,22 +7,11 @@
 
 namespace fs = std::filesystem;
 
-hit_record hit_sphere(const std::vector<sphere>& spheres, const Ray& r) 
-{
+
+
+color ray_color(const Ray& r, const hittable_list& h_list) {
 	hit_record rec;
-	hit_record cur_rec;
-	for each (const auto& sph in spheres)
-	{
-		if(sph.hit(r,0,std::numeric_limits<double>().max(),cur_rec))
-			if(cur_rec.t > 0 && (cur_rec.t < rec.t || rec.t < 0))
-				rec = cur_rec;
-	}
-
-	return rec;
-};
-
-color ray_color(const Ray& r, const std::vector<sphere>& spheres) {
-	auto rec = hit_sphere(spheres, r);
+	h_list.hit(r, 0, infinity, rec);
 	if (rec.t > 0.0)
 		return 0.5 * color(rec.normal.x() + 1, rec.normal.y() + 1, rec.normal.z() + 1);
 	
@@ -43,28 +32,21 @@ int main(int argc, char* argv[])
 	const auto aspect_ratio = 16.0 / 9.0;
 	const int image_width = 400;
 	const int image_height = static_cast<int>(image_width / aspect_ratio);
+	const int samples_per_pixel = 100;
+	const double samples_per_pixel_d = (double)samples_per_pixel;
 
 	// Camera
-
-	auto viewport_height = 2.0;
-	auto viewport_width = aspect_ratio * viewport_height;
-	auto focal_length = 1.0;
-
-	auto origin = point3(0, 0, 0);
-	auto horizontal = vec3(viewport_width, 0, 0);
-	auto vertical = vec3(0, viewport_height, 0);
-	auto lower_left_corner = origin - horizontal / 2 - vertical / 2 - vec3(0, 0, focal_length);
-
+	Camera cam;
+	
 	//// Test image 
-	//const int width = 200;
-	//const int height = 100;
 	const int channels = 3;
 	img_datad img(image_width * image_height);
 
-	std::vector<sphere> spheres = { sphere(point3(0, 0, -1), 0.5),
-									sphere(point3(.5, .5, -1.6), 0.25),
-									sphere(point3(-0.7, 0.3, -0.8), 0.3),
-									sphere(point3(2, 1, -1.8), 0.6) };
+	// World
+	hittable_list world;
+	world.add(std::make_shared<sphere>(point3(0, 0, -1), 0.5));
+	world.add(std::make_shared<sphere>(point3(0, -100.5, -1), 100));
+
 
 	// compute colors 
 	int index = 0;
@@ -73,13 +55,17 @@ int main(int argc, char* argv[])
 		std::cout << "Progress: " << (int)(100.0f * (float)(image_height - j)/ (float)(image_height)) << "%\r";
 		for (int i = 0; i < image_width; ++i)
 		{
+			color pixel_color = color::Zero();
+			for (int s = 0; s < samples_per_pixel; s++)
+			{
+				auto u = double(i + random_double()) / (image_width - 1);
+				auto v = double(j + random_double()) / (image_height - 1);
+				Ray r = cam.get_ray(u, v);
+				pixel_color += ray_color(r, world);
+			}
+			
 
-			auto u = double(i) / (image_width - 1);
-			auto v = double(j) / (image_height - 1);
-			Ray r(origin, lower_left_corner + u * horizontal + v * vertical - origin);
-			color pixel_color = ray_color(r, spheres);
-
-			img[index] = 255.99 * pixel_color;
+			img[index] = 255.99 * (pixel_color / samples_per_pixel_d);
 			index++;
 		}
 	}
