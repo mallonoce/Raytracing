@@ -9,12 +9,19 @@ namespace fs = std::filesystem;
 
 
 
-color ray_color(const Ray& r, const hittable_list& h_list) {
+color ray_color(const Ray& r, const hittable_list& world, int depth) 
+{
 	hit_record rec;
-	h_list.hit(r, 0, infinity, rec);
-	if (rec.t > 0.0)
-		return 0.5 * color(rec.normal.x() + 1, rec.normal.y() + 1, rec.normal.z() + 1);
-	
+
+	// If we've exceeded the ray bounce limit, no more light is gathered.
+	if (depth <= 0)
+		return color(0, 0, 0);
+
+	if (world.hit(r, 0.001, infinity, rec)) {
+		point3 target = rec.p + rec.normal + random_unit_vector();
+		return 0.5 * ray_color(Ray(rec.p, target - rec.p), world, depth - 1);
+	}
+
 	auto t = 0.5 * (r.direction().y() + 1.0);
 	return (1.0 - t) * color(1.0, 1.0, 1.0) + t * color(0.5, 0.7, 1.0);
 }
@@ -34,6 +41,10 @@ int main(int argc, char* argv[])
 	const int image_height = static_cast<int>(image_width / aspect_ratio);
 	const int samples_per_pixel = 100;
 	const double samples_per_pixel_d = (double)samples_per_pixel;
+	const int max_depth = 3;
+	double gamma = 2.0;
+	double gamma_inv = 1.0/gamma;
+
 
 	// Camera
 	Camera cam;
@@ -58,14 +69,21 @@ int main(int argc, char* argv[])
 			color pixel_color = color::Zero();
 			for (int s = 0; s < samples_per_pixel; s++)
 			{
-				auto u = double(i + random_double()) / (image_width - 1);
-				auto v = double(j + random_double()) / (image_height - 1);
+				auto u = double(i + random_double(-1, 1)) / (image_width - 1);
+				auto v = double(j + random_double(-1, 1)) / (image_height - 1);
 				Ray r = cam.get_ray(u, v);
-				pixel_color += ray_color(r, world);
+				pixel_color += ray_color(r, world, max_depth);
 			}
 			
+			// antialiasing
+			pixel_color /= samples_per_pixel_d;
+			// gamma correction 
+			pixel_color[0] = std::pow(pixel_color[0], gamma_inv);
+			pixel_color[1] = std::pow(pixel_color[1], gamma_inv);
+			pixel_color[2] = std::pow(pixel_color[2], gamma_inv);
 
-			img[index] = 255.99 * (pixel_color / samples_per_pixel_d);
+			// write to memory
+			img[index] = 255.99 * pixel_color;
 			index++;
 		}
 	}
