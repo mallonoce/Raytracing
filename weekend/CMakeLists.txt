@@ -14,6 +14,7 @@ SET(CMAKE_INCLUDE_CURRENT_DIR ON)
 list(APPEND HEADER_FILES
 	include/header.h
 	include/camera.h
+	include/material.h
 	include/ray.h
 	include/hittable.h
 	include/stb/stb_image.h

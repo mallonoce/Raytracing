@@ -68,6 +68,10 @@ inline vec3 random_unit_vector() {
     return random_vec_in_unit_sphere().normalized();
 }
 
+inline vec3 reflect(const vec3& v, const vec3& n) {
+    return v - 2 * v.dot(n) * n;
+}
+
 inline double clamp(double x, double min, double max) {
     if (x < min) return min;
     if (x > max) return max;

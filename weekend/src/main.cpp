@@ -1,13 +1,12 @@
 #include "header.h"
 #include "camera.h"
 #include "hittable.h"
+#include "Material.h"
 
 #include <filesystem>
 #include <vector>
 
 namespace fs = std::filesystem;
-
-
 
 color ray_color(const Ray& r, const hittable_list& world, int depth) 
 {
@@ -18,8 +17,13 @@ color ray_color(const Ray& r, const hittable_list& world, int depth)
 		return color(0, 0, 0);
 
 	if (world.hit(r, 0.001, infinity, rec)) {
-		point3 target = rec.p + rec.normal + random_unit_vector();
-		return 0.5 * ray_color(Ray(rec.p, target - rec.p), world, depth - 1);
+		Ray scattered;
+		color attenuation;
+		/*point3 target = rec.p + rec.normal + random_unit_vector();
+		return 0.5 * ray_color(Ray(rec.p, target - rec.p), world, depth - 1);*/
+		if (rec.mat_ptr->scatter(r, rec, attenuation, scattered))
+			return attenuation.cwiseProduct(ray_color(scattered, world, depth - 1));
+		return color(0, 0, 0);
 	}
 
 	auto t = 0.5 * (r.direction().y() + 1.0);
@@ -53,10 +57,20 @@ int main(int argc, char* argv[])
 	const int channels = 3;
 	img_datad img(image_width * image_height);
 
-	// World
+
 	hittable_list world;
-	world.add(std::make_shared<sphere>(point3(0, 0, -1), 0.5));
-	world.add(std::make_shared<sphere>(point3(0, -100.5, -1), 100));
+
+
+	// Material 
+	auto material_ground = std::make_shared<Lambertian>(color(0.8, 0.8, 0.0));
+	auto material_center = std::make_shared<Lambertian>(color(0.7, 0.3, 0.3));
+	auto material_left = std::make_shared<Metal>(color(0.8, 0.8, 0.8));
+	auto material_right = std::make_shared<Metal>(color(0.8, 0.6, 0.2));
+
+	world.add(std::make_shared<sphere>(point3(0.0, -100.5, -1.0), 100.0, material_ground));
+	world.add(std::make_shared<sphere>(point3(0.0, 0.0, -1.0), 0.5, material_center));
+	world.add(std::make_shared<sphere>(point3(-1.0, 0.0, -1.0), 0.5, material_left));
+	world.add(std::make_shared<sphere>(point3(1.0, 0.0, -1.0), 0.5, material_right));
 
 
 	// compute colors 

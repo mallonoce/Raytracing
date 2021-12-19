@@ -6,9 +6,12 @@
 #include "header.h"
 #include "ray.h"
 
+class Material;
+
 struct hit_record {
 	point3 p = point3::Zero();
 	vec3 normal = vec3::Zero();
+	std::shared_ptr<Material> mat_ptr;
 	double t = -1.0;
 	bool front_face = true;
 
@@ -43,12 +46,13 @@ class sphere : public hittable
 {
 public:
 	sphere();
-	sphere(const point3& center, double r) : _center(center), _r(r) {};
+	sphere(const point3& center, double r, std::shared_ptr<Material> m) : _center(center), _r(r), _mat_ptr(m) {};
 	virtual bool hit(const Ray& ray, const double& t_min, const double& t_max, hit_record& rec) const;
 
 private:
 	point3 _center;
 	double _r;
+	std::shared_ptr<Material> _mat_ptr;
 };
 
 
@@ -99,6 +103,7 @@ bool sphere::hit(const Ray& ray, const double& t_min, const double& t_max, hit_r
 	rec.t = root;
 	rec.p = ray.at(root);
 	rec.set_face_normal(ray, (rec.p - _center) / _r);
+	rec.mat_ptr = _mat_ptr;
 	return true;
 }
 
